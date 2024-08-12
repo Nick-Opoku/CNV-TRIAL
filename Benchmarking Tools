@@ -1,1 +1,32 @@
-The tools used for the benchmarking analysis is provided in this folder together with the corresponding outputs.
+#USING CANOES
+#STEP ONE
+#bedtools multicov -bams `cat /path-to-bam-files/bam_list` -bed /path-to-target-bed-file/targets.bed -q 20 >
+/path-to-output-directory/canoes.reads.txt
+
+#STEP TWO
+#java -jar /path-to-GATK-files/tools/GATK/3.5-0-g36282e4/GenomeAnalysisTK.jar -T GCContentByInterval -L 
+/path-to-target-bed/targets.bed -R /path-to-reference-genome/human_genome/hs37d5.fa -o 
+/path-to-output-directory/canoes/gc.txt
+
+#MAIN STEP
+setwd('/home/nick/Downloads/CNVTOOLS/')
+gc <- read.table("/home/nick/Downloads/CNVTOOLS/gc.txt")$V2
+canoes.reads <- read.table("/home/nick/Downloads/CNVTOOLS/canoes.reads.txt")
+
+sample.names <- c('HG71.bam','NA78.bam','NA59.bam','NA06.bam')
+names(canoes.reads) <- c("chromosome", "start", "end", sample.names)
+
+target <- seq(1, nrow(canoes.reads))
+canoes.reads <- cbind(target, gc, canoes.reads)
+
+source("/home/nick/Downloads/CNVTOOLS/CANOES-master/CANOES.R")
+
+xcnv.list <- vector('list', length(sample.names)) 
+
+for (i in 1:length(sample.names)){
+  xcnv.list[[i]] <- CallCNVs(sample.names[i], canoes.reads)
+}
+xcnvs <- do.call('rbind', xcnv.list)
+
+write.table(xcnvs,paste0("/home/nick/Downloads/CNVTOOLS/canoes.csv"),col.names = T,row.names = T,quote = F)
+
